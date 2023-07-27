@@ -12,8 +12,10 @@ import (
 
 type User struct {
 	gorm.Model
-	Username string `gorm:"size:255;not null;unique" json:"username"`
-	Password string `gorm:"size:255;not null;" json:"password"`
+	Username  string `gorm:"size:255;not null;unique" json:"username"`
+	Password  string `gorm:"size:255;not null;" json:"password"`
+	FirstName string `gorm:"size:255;not null;" json:"firstname"`
+	LastName  string `gorm:"size:255;not null;" json:"lastname"`
 }
 
 func GetUserByID(uid uint) (User, error) {

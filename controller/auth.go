@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hamziHashmi/GolangAuthentication/models"
@@ -58,8 +59,34 @@ func Login(c *gin.Context) {
 }
 
 type RegisterInput struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username        string `json:"username" binding:"required"`
+	Password        string `json:"password" binding:"required"`
+	ConfirmPassword string `json:"confirmPassword" binding:"required"`
+	FirstName       string `json:"firstName" binding:"required"`
+	LastName        string `json:"lastName" binding:"required"`
+}
+
+func isPasswordValid(password string) bool {
+	if len(password) < 8 {
+		return false
+	}
+
+	var hasUpper, hasLower, hasDigit, hasSymbol bool
+
+	for _, char := range password {
+		switch {
+		case unicode.IsUpper(char):
+			hasUpper = true
+		case unicode.IsLower(char):
+			hasLower = true
+		case unicode.IsDigit(char):
+			hasDigit = true
+		case unicode.IsPunct(char) || unicode.IsSymbol(char):
+			hasSymbol = true
+		}
+	}
+
+	return hasUpper && hasLower && hasDigit && hasSymbol
 }
 
 func Register(c *gin.Context) {
@@ -71,10 +98,22 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	if !isPasswordValid(input.Password) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Please enter a valid password"})
+		return
+	}
+
+	if input.Password != input.ConfirmPassword {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Please enter same Passwords"})
+		return
+	}
+
 	u := models.User{}
 
 	u.Username = input.Username
 	u.Password = input.Password
+	u.FirstName = input.FirstName
+	u.LastName = input.LastName
 
 	_, err := u.SaveUser()
 
