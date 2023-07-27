@@ -21,7 +21,7 @@ func GetUserByID(uid uint) (User, error) {
 	var u User
 
 	if err := DB.First(&u, uid).Error; err != nil {
-		return u, errors.New("User not found!")
+		return u, errors.New("user not found")
 	}
 
 	u.PrepareGive()
@@ -67,9 +67,7 @@ func LoginCheck(username string, password string) (string, error) {
 }
 
 func (u *User) SaveUser() (*User, error) {
-
-	var err error
-	err = DB.Create(&u).Error
+	err := DB.Create(&u).Error
 	if err != nil {
 		return &User{}, err
 	}
