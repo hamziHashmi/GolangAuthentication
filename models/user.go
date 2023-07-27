@@ -10,6 +10,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func GetUserByUsername(username string) (*User, error) {
+	var u User
+	err := DB.Where("username = ?", username).First(&u).Error
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
 type User struct {
 	gorm.Model
 	Username  string `gorm:"size:255;not null;unique" json:"username"`
@@ -69,11 +78,22 @@ func LoginCheck(username string, password string) (string, error) {
 }
 
 func (u *User) SaveUser() (*User, error) {
-	err := DB.Create(&u).Error
+	// Check if the user exists in the database
+	existingUser, err := GetUserByID(u.ID)
 	if err != nil {
-		return &User{}, err
+		return nil, err
 	}
-	return u, nil
+
+	// Update the password for the existing user
+	existingUser.Password = u.Password
+
+	// Save the updated user to the database
+	err = DB.Save(existingUser).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &existingUser, nil
 }
 
 func (u *User) BeforeSave() error {

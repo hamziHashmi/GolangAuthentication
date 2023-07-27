@@ -77,3 +77,62 @@ func ExtractTokenID(c *gin.Context) (uint, error) {
 	}
 	return 0, nil
 }
+
+// Function to generate a token for reset password
+func GenerateTokenForResetPassword(user_id uint) (string, error) {
+	token_lifespan := 1 // Set the token lifespan in hours (e.g., 1 hour)
+
+	claims := jwt.MapClaims{}
+	claims["authorized"] = true
+	claims["user_id"] = user_id
+	claims["exp"] = time.Now().Add(time.Hour * time.Duration(token_lifespan)).Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString([]byte(os.Getenv("API_SECRET")))
+}
+
+// Function to validate the reset password token
+func ValidateResetPasswordToken(tokenString string, user_id uint) error {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("API_SECRET")), nil
+	})
+	if err != nil {
+		return err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return fmt.Errorf("invalid token")
+	}
+
+	uid := uint(claims["user_id"].(float64))
+	if uid != user_id {
+		return fmt.Errorf("invalid token for this user")
+	}
+
+	return nil
+}
+
+// Function to validate the reset password token and get the user ID
+func ValidateResetPasswordTokenAndGetID(tokenString string) (uint, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("API_SECRET")), nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return 0, fmt.Errorf("invalid token")
+	}
+
+	userID := uint(claims["user_id"].(float64))
+	return userID, nil
+}
